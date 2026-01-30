@@ -13,3 +13,12 @@ typing-inspection==0.4.2
 typing_extensions==4.15.0
 unicorn==2.1.4
 uvicorn==0.39.0
+fastapi
+uvicorn[standard]
+sqlalchemy>=2.0
+asyncpg
+psycopg2-binary
+pydantic-settings
+alembic>=1.16.5
+sqlalchemy>=2.0
+asyncpg
