@@ -9,8 +9,8 @@ class DocumentRecord(Base):
     id = Column(UUID, primary_key=True)
     filename = Column(String)
     file_hash = Column(String)
-    chunks = JSONB()
-    embeddings = JSONB
+    chunks = Column(JSONB)
+    embeddings = Column(JSONB)
     s3_url = Column(String, nullable=True)
     vector_cache_path = Column(String, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
