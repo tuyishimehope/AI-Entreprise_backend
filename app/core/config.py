@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     db_user: str
     db_password: str
 
+    OPENAI_API_KEY: str
     log_level: str = "INFO"
 
     @property

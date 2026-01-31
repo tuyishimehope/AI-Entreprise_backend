@@ -1,4 +1,4 @@
-from sqlalchemy.orm import DeclarativeBase
+from app.db.base_class import Base
 
-class Base(DeclarativeBase):
-    pass
+from app.models.document_record import DocumentRecord
+from app.models.chat_record import ChatRecord
