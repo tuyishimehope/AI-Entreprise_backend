@@ -37,6 +37,5 @@ class OpenAIService:
             ],
             temperature=0
         )
-
         answer = response.choices[0].message.content
         return answer

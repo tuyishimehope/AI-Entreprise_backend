@@ -7,6 +7,7 @@ from app.services.openai import OpenAIService
 from app.services.chunks import ChunkService
 from app.services.document_processor import DocumentProcessor
 from app.services.rag import RAGService
+from app.services.file import FileService
 
 
 class ChatQuestionService:
@@ -14,9 +15,13 @@ class ChatQuestionService:
         self.ai = ai_service
         self.chunks = chunk_service
 
-    async def process_and_ask(self, file, question: str, db: AsyncSession) -> Dict[str, Any]:
-        content = await file.read()
-        file_hash = hashlib.md5(content).hexdigest()
+    async def process_and_ask(self, file_id, question: str, db: AsyncSession) -> Dict[str, Any]:
+        file_data = await FileService.get_file_id(file_id=file_id, db=db)
+        content = file_data.get("content")
+        filename = file_data.get("filename")
+        file_path = file_data.get("file_path")
+        encoded_data = content.encode('utf-8') # type: ignore
+        file_hash = hashlib.md5(encoded_data).hexdigest() 
 
         existing_doc = await RAGService.get_existing_doc(db, file_hash)
 
@@ -28,8 +33,8 @@ class ChatQuestionService:
             doc_id = existing_doc.id
         else:
             # CACHE MISS: Do the heavy lifting (and pay OpenAI)
-            extension = file.filename.split(".")[-1].lower()
-            text_data = DocumentProcessor.extract_text(content, extension)
+            extension = filename.split(".")[-1].lower() # type: ignore
+            text_data = DocumentProcessor.extract_text(file_path, extension) # type: ignore
             my_chunks = self.chunks.simple_chunker(text=text_data)
 
             # OpenAI call for document body (Expensive)
@@ -39,7 +44,7 @@ class ChatQuestionService:
             # Persist the new document so we never pay for it again
             new_doc = await RAGService.create_document_entry(
                 db=db,
-                filename=file.filename,
+                filename=filename, # type: ignore
                 file_hash=file_hash,
                 chunks=my_chunks,
                 embeddings=embeddings_list
@@ -70,6 +75,7 @@ class ChatQuestionService:
         chat_entry = await RAGService.create_chat_entry(
             db=db,
             doc_id=doc_id,  # type: ignore
+            file_id=file_id,
             query=question,
             answer=answer,
             sources=relevant_texts
@@ -77,7 +83,9 @@ class ChatQuestionService:
 
         return {
             "id": chat_entry.id,
+            "question": question,
             "answer": answer,
             "sources": relevant_texts,
-            "document_id": doc_id
+            "file_id": file_id,
+            "document_id": doc_id,
         }

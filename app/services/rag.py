@@ -33,6 +33,7 @@ class RAGService:
     async def create_chat_entry(
         db: AsyncSession,
         doc_id: uuid.UUID,
+        file_id: uuid.UUID,
         query: str,
         answer: str,
         sources: list[str]
@@ -40,6 +41,7 @@ class RAGService:
         new_chat = ChatRecord(
             id=uuid.uuid4(),
             document_id=doc_id,
+            file_id=file_id,
             question=query,
             answer=answer,
             sources=sources,

@@ -28,6 +28,7 @@ class ChatCreate(ChatBase):
 class ChatRead(ChatBase):
     id: UUID
     created_at: datetime
+    file_id: UUID
     document_id: UUID
     document: Optional[DocumentRead] = None
 
