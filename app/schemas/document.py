@@ -1,28 +1,21 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from uuid import UUID
 from datetime import datetime
 
 
 class DocumentSchema(BaseModel):
     id: UUID
-    filename: str
+    file_name: str
+    # file_path: str
+    chunks: list[str]
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
-class DocumentBase(BaseModel):
-    filename: str
+class DocumentRead(DocumentSchema):
+    pass
 
 
-class DocumentCreate(DocumentBase):
+class DocumentCreate(DocumentSchema):
     file_hash: str
-
-
-class DocumentRead(DocumentBase):
-    id: UUID
-    created_at: datetime
-
-    class Config:
-        from_attributes = True

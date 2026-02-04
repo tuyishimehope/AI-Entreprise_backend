@@ -6,8 +6,10 @@ from sqlalchemy.dialects.postgresql import JSONB
 
 class DocumentRecord(Base):
     __tablename__ = "documents"
+    
     id = Column(UUID, primary_key=True)
-    filename = Column(String)
+    file_name = Column(String)
+    file_path = Column(String)
     file_hash = Column(String)
     chunks = Column(JSONB)
     embeddings = Column(JSONB)

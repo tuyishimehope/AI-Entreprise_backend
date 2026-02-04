@@ -6,7 +6,7 @@ from alembic import context
 
 # --- IMPORT YOUR MODELS AND SETTINGS HERE ---
 # Ensure these paths match your project structure
-from app.db.base import Base  
+from app.db.base_class import Base  
 from app.core.config import settings 
 
 # This is the Alembic Config object

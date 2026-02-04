@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from uuid import UUID
 from datetime import datetime
 from typing import List, Optional
@@ -14,8 +14,7 @@ class ChatResponseSchema(BaseModel):
     created_at: datetime
     document: DocumentSchema 
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ChatBase(BaseModel):
     question: str
@@ -28,9 +27,7 @@ class ChatCreate(ChatBase):
 class ChatRead(ChatBase):
     id: UUID
     created_at: datetime
-    file_id: UUID
     document_id: UUID
     document: Optional[DocumentRead] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

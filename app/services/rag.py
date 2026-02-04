@@ -10,7 +10,7 @@ class RAGService:
     @staticmethod
     async def create_document_entry(
         db: AsyncSession,
-        filename: str,
+        file_name: str,
         file_hash: str,
         chunks: list[str],
         embeddings: list[list[float]]
@@ -18,7 +18,7 @@ class RAGService:
         """Creates a document record with cached embeddings to save OpenAI costs."""
         new_document = DocumentRecord(
             id=uuid.uuid4(),
-            filename=filename,
+            file_name=file_name,
             file_hash=file_hash,
             chunks=chunks,
             embeddings=embeddings,
@@ -33,7 +33,6 @@ class RAGService:
     async def create_chat_entry(
         db: AsyncSession,
         doc_id: uuid.UUID,
-        file_id: uuid.UUID,
         query: str,
         answer: str,
         sources: list[str]
@@ -41,7 +40,6 @@ class RAGService:
         new_chat = ChatRecord(
             id=uuid.uuid4(),
             document_id=doc_id,
-            file_id=file_id,
             question=query,
             answer=answer,
             sources=sources,
