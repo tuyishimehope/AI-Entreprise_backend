@@ -15,13 +15,13 @@ class ChatQuestionService:
         self.ai = ai_service
         self.chunks = chunk_service
 
-    async def process_and_ask(self, file_id, question: str, db: AsyncSession) -> Dict[str, Any]:
-        file_data = await DocumentService.get_file_content(file_id=file_id, db=db)
+    async def process_and_ask(self, file_id, session_id, question: str, db: AsyncSession) -> Dict[str, Any]:
+        file_data = await DocumentService.get_file(file_id=file_id, db=db)
         content = file_data.get("content")
         file_name = file_data.get("file_name")
         file_path = file_data.get("file_path")
-        encoded_data = content.encode('utf-8') # type: ignore
-        file_hash = hashlib.md5(encoded_data).hexdigest() 
+        encoded_data = content.encode('utf-8')  # type: ignore
+        file_hash = hashlib.md5(encoded_data).hexdigest()
 
         existing_doc = await RAGService.get_existing_doc(db, file_hash)
 
@@ -33,8 +33,9 @@ class ChatQuestionService:
             doc_id = existing_doc.id
         else:
             # CACHE MISS: Do the heavy lifting (and pay OpenAI)
-            extension = file_name.split(".")[-1].lower() # type: ignore
-            text_data = DocumentProcessor.extract_text(file_path, extension) # type: ignore
+            extension = file_name.split(".")[-1].lower()  # type: ignore
+            text_data = DocumentProcessor.extract_text(
+                file_path, extension)  # type: ignore
             my_chunks = self.chunks.simple_chunker(text=text_data)
 
             # OpenAI call for document body (Expensive)
@@ -44,7 +45,7 @@ class ChatQuestionService:
             # Persist the new document so we never pay for it again
             new_doc = await RAGService.create_document_entry(
                 db=db,
-                file_name=file_name, # type: ignore
+                file_name=file_name,  # type: ignore
                 file_hash=file_hash,
                 chunks=my_chunks,
                 embeddings=embeddings_list
@@ -74,7 +75,7 @@ class ChatQuestionService:
 
         chat_entry = await RAGService.create_chat_entry(
             db=db,
-            doc_id=doc_id, # type: ignore
+            session_id=session_id,
             query=question,
             answer=answer,
             sources=relevant_texts

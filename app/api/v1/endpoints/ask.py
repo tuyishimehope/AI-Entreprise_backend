@@ -1,3 +1,4 @@
+from uuid import UUID
 from fastapi import APIRouter, UploadFile, Depends, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
@@ -9,6 +10,7 @@ from app.services.chat.chunks import ChunkService
 from app.services.rag import RAGService
 from app.core.config import settings
 from app.services.document.document import DocumentService
+
 
 router = APIRouter()
 
@@ -23,22 +25,17 @@ def get_chat_service():
 async def chat_endpoint(
     file_id: str = Form(...),
     question: str = Form(...),
+    session_id: str = Form(...),
     db: AsyncSession = Depends(get_db),
     service: ChatQuestionService = Depends(get_chat_service)
 ):
-    return await service.process_and_ask(file_id, question, db)
+    return await service.process_and_ask(file_id, session_id,question, db)
 
 
 @router.get("/history", response_model=List[ChatRead])
 async def get_chats(db: AsyncSession = Depends(get_db)):
     return await RAGService.get_all_chats(db=db)
 
-
-@router.post("/file")
-async def upload_document(file: UploadFile, db: AsyncSession = Depends(get_db)):
-    return await DocumentService.upload_file(file, db)
-
-
-@router.get("/file/{file_id}")
-async def get_file(file_id, db: AsyncSession = Depends(get_db)):
-    return await DocumentService.get_file_content(file_id=file_id, db=db)
+@router.get("/history/{session_id}")
+async def get_history(session_id: UUID, db:AsyncSession = Depends(get_db)):
+    return await RAGService.get_history(session_id,db)

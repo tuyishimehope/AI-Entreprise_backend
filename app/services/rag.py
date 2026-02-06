@@ -1,5 +1,7 @@
+from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from fastapi import HTTPException
 from app.models.document_record import DocumentRecord
 from app.models.chat_record import ChatRecord
 from sqlalchemy.orm import joinedload
@@ -32,14 +34,14 @@ class RAGService:
     @staticmethod
     async def create_chat_entry(
         db: AsyncSession,
-        doc_id: uuid.UUID,
+        session_id: UUID,
         query: str,
         answer: str,
         sources: list[str]
     ):
         new_chat = ChatRecord(
             id=uuid.uuid4(),
-            document_id=doc_id,
+            session_id=session_id,
             question=query,
             answer=answer,
             sources=sources,
@@ -63,7 +65,7 @@ class RAGService:
     async def get_document_history(db: AsyncSession, doc_id: uuid.UUID):
         result = await db.execute(
             select(ChatRecord)
-            .where(ChatRecord.document_id == doc_id)
+            # .where(ChatRecord.document_id == doc_id)
             .order_by(ChatRecord.created_at.asc())
         )
         return result.scalars().all()
@@ -76,7 +78,7 @@ class RAGService:
         """
         stmt = (
             select(ChatRecord)
-            .options(joinedload(ChatRecord.document))  # type: ignore
+            # .options(joinedload(ChatRecord))  
             .order_by(ChatRecord.created_at.desc())
             .limit(limit)
         )
@@ -91,3 +93,10 @@ class RAGService:
         result = await db.execute(stmt)
         existing_doc = result.scalar_one_or_none()
         return existing_doc
+
+    @staticmethod
+    async def get_history(session_id,db):
+        record = await db.execute(select(ChatRecord).where(ChatRecord.session_id == session_id))
+        session =  record.scalars().all()
+
+        return session

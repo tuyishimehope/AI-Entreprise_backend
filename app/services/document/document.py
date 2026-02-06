@@ -1,6 +1,7 @@
 import uuid
 import shutil
 from pathlib import Path
+from fastapi.responses import FileResponse
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from pypdf import PdfReader
@@ -49,7 +50,7 @@ class DocumentService:
         return new_file
 
     @staticmethod
-    async def get_file_content(file_id, db: AsyncSession):
+    async def get_file(file_id, db: AsyncSession):
         result = await db.execute(select(DocumentRecord).where(DocumentRecord.id == file_id))
         file_record = result.scalars().first()
 
@@ -70,3 +71,30 @@ class DocumentService:
             "content": text_content,
             "file_path": file_record.file_path
         }
+        
+    @staticmethod
+    async def get_file_content(file_id, db: AsyncSession):
+        result = await db.execute(select(DocumentRecord).where(DocumentRecord.id == file_id))
+        file_record = result.scalars().first()
+
+        if not file_record:
+            print("file_record", file_record)
+            raise HTTPException(status_code=404, detail="File not found")
+
+        text_content = ""
+        try:
+            reader = PdfReader(file_record.file_path)  # type: ignore
+            for page in reader.pages:
+                text_content += page.extract_text() + "\n"
+        except Exception as e:
+            raise ValueError(f"Could not read PDF: {e}")
+
+        return FileResponse(
+            filename=file_record.file_name,
+            path=file_record.file_path
+        )
+
+    @staticmethod
+    async def get_all_files(db: AsyncSession):
+        result = await db.execute(select(DocumentRecord))
+        return result.scalars().all()
