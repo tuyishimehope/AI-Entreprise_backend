@@ -4,10 +4,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 
 class ChunkService:
-    @staticmethod
-    def generate_file_hash(content: bytes) -> str:
-        """Generate a unique hash for the file to prevent re-embedding."""
-        return hashlib.md5(content).hexdigest()
 
     @staticmethod
     def simple_chunker(text: str, chunk_size: int = 1000, overlap: int = 200) -> list[str]:

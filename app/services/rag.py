@@ -1,10 +1,8 @@
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from fastapi import HTTPException
 from app.models.document_record import DocumentRecord
 from app.models.chat_record import ChatRecord
-from sqlalchemy.orm import joinedload
 import uuid
 
 
