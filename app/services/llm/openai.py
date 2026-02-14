@@ -2,6 +2,8 @@ import os
 from openai import OpenAI
 from typing import Optional
 
+from app.services.rag import RAGService
+
 
 class OpenAIService:
     def __init__(self, api_key: Optional[str], model: str = "gpt-4o"):
@@ -20,7 +22,7 @@ class OpenAIService:
         )
         return [item.embedding for item in response.data]
 
-    def ask_question_about_document(self, context_text, user_question):
+    async def ask_question_about_document(self, db, session_id, sources, context_text, user_question):
         system_prompt = """
         You are a helpful assistant. Use ONLY the provided context to answer the question. 
         If the answer is not in the context, say you don't know. 
@@ -28,14 +30,19 @@ class OpenAIService:
         {context}
         """.format(context=context_text)
 
+        full_answer = ""
         user_prompt = f"Question: {user_question}"
-        response = self.client.chat.completions.create(
+        stream = self.client.chat.completions.create(
             model="gpt-4o",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            temperature=0
+            temperature=0,
+            stream=True
         )
-        answer = response.choices[0].message.content
-        return answer
+        for chunk in stream:
+            content = chunk.choices[0].delta.content
+            if content:
+                full_answer += content
+                yield content

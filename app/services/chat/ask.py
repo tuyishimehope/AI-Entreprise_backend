@@ -1,6 +1,7 @@
 import hashlib
-from typing import Dict, Any, List
+from typing import AsyncGenerator, Dict, Any, List
 from uuid import UUID
+from fastapi.responses import StreamingResponse
 import numpy as np
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -35,7 +36,7 @@ class ChatQuestionService:
         session_id: str,
         question: str,
         db: AsyncSession,
-    ) -> Dict[str, Any]:
+    ) :
         """
         Main RAG entrypoint:
         - loads or caches document
@@ -60,19 +61,24 @@ class ChatQuestionService:
 
         context = "\n\n".join(relevant_chunks)
 
-        answer = await self._generate_answer(
+        generator = self._generate_answer(
+            db=db,
+            session_id=UUID(session_id),
+            sources=relevant_chunks,
             context=context,
             question=question,
         )
+        # document_id=cached_doc["doc_id"],
 
-        return await self._persist_chat(
-            db=db,
-            session_id=UUID(session_id),
-            question=question,
-            answer=answer,
-            sources=relevant_chunks,
-            document_id=cached_doc["doc_id"],
-        )
+        # await self._persist_chat(
+        #     db=db,
+        #     session_id=UUID(session_id),
+        #     question=question,
+        #     answer=text_data,
+        #     sources=relevant_chunks,
+        #     document_id=cached_doc["doc_id"],
+        # )
+        return StreamingResponse(generator, media_type="text/plain")
 
     async def _load_document(
         self,
@@ -173,11 +179,19 @@ class ChatQuestionService:
 
     async def _generate_answer(
         self,
+        db: AsyncSession,
+        session_id: UUID,
+        sources: List[str],
+        # document_id: str,
         context: str,
         question: str,
-    ) -> str:
+    ) -> AsyncGenerator[str, None]:
         try:
-            answer = self.ai.ask_question_about_document(
+            full_answer = ""
+            generator = self.ai.ask_question_about_document(
+                db,
+                session_id,
+                sources,
                 context_text=context,
                 user_question=question,
             )
@@ -187,16 +201,21 @@ class ChatQuestionService:
                 detail="LLM generation failed.",
             ) from exc
 
-        if not answer:
+        if not generator:
             raise HTTPException(400, detail="No answer generated")
 
-        if not answer.strip():
-            raise HTTPException(
-                status_code=422,
-                detail="LLM returned an empty response.",
-            )
+        async for chunk in generator:
+            full_answer += chunk
+            yield chunk
+        
+        await RAGService.create_chat_entry(
+            db=db,
+            session_id=session_id,
+            query=question,
+            answer=full_answer,
+            sources=sources,
+        )
 
-        return answer
 
     async def _persist_chat(
         self,
